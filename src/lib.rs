@@ -4,7 +4,6 @@ use std::fs;
 pub fn run() {
     let file_name = get_arg("file-name", Some("File name is not provided"), false, false)
         .unwrap_or_else(|err| panic!("{err}"));
-
     let search_str = get_arg("search-str", Some("Search string is not provided"), false, false)
         .unwrap_or_else(|err| panic!("{err}"));
 
@@ -13,9 +12,8 @@ pub fn run() {
         _ => false
     };
 
-    let file_text = get_file_str(&file_name);
     let search_str = if match_case { search_str } else { search_str.to_lowercase() };
-    let file_text = if match_case { file_text } else { file_text.to_lowercase() };
+    let file_text = if match_case { get_file_text(&file_name) } else { get_file_text(&file_name).to_lowercase() };
 
     if file_text.contains(&search_str) {
         println!("This file contains the string \"{search_str}\"");
@@ -46,7 +44,7 @@ fn get_arg(arg_name: &str, panic_message: Option<&str>, is_flag: bool, is_option
     }
 }
 
-fn get_file_str(file_name: &str) -> String {
+fn get_file_text(file_name: &str) -> String {
     let file = fs::read_to_string(file_name).expect("Something went wrong reading the file");
     let file = file.trim_start_matches("\u{feff}").to_string();
 
