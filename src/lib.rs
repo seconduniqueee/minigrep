@@ -15,6 +15,7 @@ pub fn run() {
 
     let file_text = get_file_str(&file_name);
     let search_str = if match_case { search_str } else { search_str.to_lowercase() };
+    let file_text = if match_case { file_text } else { file_text.to_lowercase() };
 
     if file_text.contains(&search_str) {
         println!("This file contains the string \"{search_str}\"");
