@@ -80,7 +80,7 @@ I don't know";
     #[test]
     fn successful_search() {
         let search_str = "how";
-        let result: Vec<String> = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
+        let result = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
 
         assert_eq!(result, vec!["How in the world"]);
     }
@@ -88,7 +88,23 @@ I don't know";
     #[test]
     fn failed_search() {
         let search_str = "wheeew";
-        let result: Vec<String> = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
+        let result = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
+
+        assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn successful_case_insensitive_search() {
+        let search_str = "How";
+        let result = tuple_to_lines(search(search_str, SAMPLE_TEXT, true));
+
+        assert_eq!(result, vec!["How in the world"]);
+    }
+
+    #[test]
+    fn failed_case_insensitive_search() {
+        let search_str = "how";
+        let result = tuple_to_lines(search(search_str, SAMPLE_TEXT, true));
 
         assert_eq!(result, Vec::<String>::new());
     }
