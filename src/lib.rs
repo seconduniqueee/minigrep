@@ -1,16 +1,6 @@
-use std::env;
 use std::fs;
 
-pub fn run() {
-    let args: Vec<String> = env::args().collect();
-    let config = match Config::new(args) {
-        Ok(config) => config,
-        Err(e) => {
-            println!("\nERR - problem parsing arguments: {}\n", e);
-            return;
-        }
-    };
-
+pub fn run(config: Config) -> Result<(), String> {
     let file_text = get_file_text(&config.file_name);
     let file_text = if config.match_case { file_text } else { file_text.to_lowercase() };
 
@@ -19,6 +9,8 @@ pub fn run() {
     } else {
         println!("This file doesn't contain the string \"{}\"", config.search_str());
     }
+
+    Ok(())
 }
 
 fn get_file_text(file_name: &str) -> String {
@@ -28,14 +20,14 @@ fn get_file_text(file_name: &str) -> String {
     file
 }
 
-struct Config {
+pub struct Config {
     file_name: String,
     search_str: String,
     match_case: bool,
 }
 
 impl Config {
-    pub fn new(args: Vec<String>) -> Result<Config, String> {
+    pub fn build(args: Vec<String>) -> Result<Config, String> {
         let file_name = Self::get_arg(&args, "file-name", false, false)?;
         let search_str = Self::get_arg(&args, "search-str", false, false)?;
         let match_case = Self::get_arg(&args, "match-case", true, false).is_ok();
@@ -49,10 +41,10 @@ impl Config {
     }
 
     fn get_arg(args: &Vec<String>, arg_name: &str, is_flag: bool, is_optional: bool) -> Result<String, String> {
-        let full_arg_name = String::from("--") + arg_name;
-        let arg = args.iter().find(|val| val.starts_with(&full_arg_name));
         let not_found_message = format!("{arg_name} is not provided");
         let parse_error_message = format!("Unable to parse {arg_name}, provide value in format --arg-name=arg-value, e.g. --file-name=superfile.txt");
+        let full_arg_name = format!("--{arg_name}");
+        let arg = args.iter().find(|val| val.starts_with(&full_arg_name));
 
         let result = match arg {
             Some(arg) => arg.split("=").nth(1),
