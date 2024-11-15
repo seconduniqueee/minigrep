@@ -3,7 +3,14 @@ use std::fs;
 
 pub fn run() {
     let args: Vec<String> = env::args().collect();
-    let config = Config::new(args).unwrap();
+    let config = match Config::new(args) {
+        Ok(config) => config,
+        Err(e) => {
+            println!("\nERR - problem parsing arguments: {}\n", e);
+            return;
+        }
+    };
+
     let file_text = get_file_text(&config.file_name);
     let file_text = if config.match_case { file_text } else { file_text.to_lowercase() };
 
