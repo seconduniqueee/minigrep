@@ -2,23 +2,27 @@ use std::fs;
 
 pub fn run(config: Config) -> Result<(), String> {
     let file_text = get_file_text(&config.file_name);
-    let file_text = if config.match_case { file_text } else { file_text.to_lowercase() };
+    let text = if config.match_case { file_text } else { file_text.to_lowercase() };
+    let search_results = search(&config.search_str(), &text);
 
-    match search(&config.search_str(), &file_text) {
-        Some(line) => println!("The next line from the text contains \"{}\"\n   -> {}", config.search_str(), line),
-        None => println!("Provided file doesn't contain the string \"{}\"", config.search_str())
+    if search_results.len() > 0 {
+        println!("\"{}\" was found on the next lines:\n", config.search_str());
+        search_results.iter().for_each(|x| println!("-> {}", x));
+    } else {
+        println!("Provided file doesn't contain the string \"{}\"", config.search_str());
     }
 
     Ok(())
 }
 
-fn search(search_str: &str, text: &str) -> Option<String> {
-    let mut split = text.split("\n");
+fn search(search_str: &str, text: &str) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
 
-    match split.find(|str| str.contains(search_str)) {
-        Some(line) => Some(line.to_string()),
-        None => None,
+    for line in text.lines() {
+        if line.contains(search_str) { result.push(line.to_string()); }
     }
+
+    result
 }
 
 fn get_file_text(file_name: &str) -> String {
@@ -78,7 +82,7 @@ How in the world
 Does that make sense?
 I don't know";
 
-        assert_eq!(search(search_str, text), Some("How in the world".to_string()));
+        assert_eq!(search(search_str, text), vec!["How in the world"]);
     }
 
     #[test]
@@ -89,6 +93,6 @@ How in the world
 does it make sense?
 I don't know";
 
-        assert_eq!(search(search_str, text), None);
+        assert_eq!(search(search_str, text), Vec::<String>::new());
     }
 }
