@@ -2,24 +2,27 @@ use std::fs;
 
 pub fn run(config: Config) -> Result<(), String> {
     let file_text = get_file_text(&config.file_name);
-    let text = if config.match_case { file_text } else { file_text.to_lowercase() };
-    let search_results = search(&config.search_str(), &text);
+    let search_results = search(&config.search_str, &file_text, config.match_case);
+
+    println!("{file_text}");
 
     if search_results.len() > 0 {
-        println!("\"{}\" was found on the next lines:\n", config.search_str());
-        search_results.iter().for_each(|x| println!("-> {}", x));
+        println!("\"{}\" was found in the next lines:\n", config.search_str);
+        search_results.iter().for_each(|x| println!("[line {}] {}", x.0, x.1));
     } else {
-        println!("Provided file doesn't contain the string \"{}\"", config.search_str());
+        println!("Provided file doesn't contain the string \"{}\"", config.search_str);
     }
 
     Ok(())
 }
 
-fn search(search_str: &str, text: &str) -> Vec<String> {
-    let mut result: Vec<String> = Vec::new();
+fn search(search_str: &str, text: &str, match_case: bool) -> Vec<(usize, String)> {
+    let mut result: Vec<(usize, String)> = Vec::new();
+    let search_for = if match_case { search_str.to_string() } else { search_str.to_lowercase() };
 
-    for line in text.lines() {
-        if line.contains(search_str) { result.push(line.to_string()); }
+    for (index, line) in text.lines().enumerate() {
+        let search_in = if match_case { line.to_string() } else { line.to_lowercase() };
+        if search_in.contains(&search_for) { result.push((index + 1, line.to_string())); }
     }
 
     result
@@ -47,11 +50,6 @@ impl Config {
         Ok(Config { file_name, search_str, match_case })
     }
 
-    pub fn search_str(&self) -> String {
-        let str = &self.search_str.clone();
-        if self.match_case { str.to_string() } else { str.to_lowercase() }
-    }
-
     fn get_arg(args: &Vec<String>, arg_name: &str, is_flag: bool, is_optional: bool) -> Result<String, String> {
         let not_found_message = format!("{arg_name} is not provided");
         let parse_error_message = format!("Unable to parse {arg_name}, provide value in format --arg-name=arg-value, e.g. --file-name=superfile.txt");
@@ -74,25 +72,28 @@ impl Config {
 mod tests {
     use super::*;
 
-    #[test]
-    fn successful_search() {
-        let search_str = "How";
-        let text = "\
+    const SAMPLE_TEXT: &str = "\
 How in the world
 Does that make sense?
 I don't know";
 
-        assert_eq!(search(search_str, text), vec!["How in the world"]);
+    #[test]
+    fn successful_search() {
+        let search_str = "how";
+        let result: Vec<String> = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
+
+        assert_eq!(result, vec!["How in the world"]);
     }
 
     #[test]
     fn failed_search() {
-        let search_str = "how";
-        let text = "\
-How in the world
-does it make sense?
-I don't know";
+        let search_str = "wheeew";
+        let result: Vec<String> = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
 
-        assert_eq!(search(search_str, text), Vec::<String>::new());
+        assert_eq!(result, Vec::<String>::new());
+    }
+
+    fn tuple_to_lines(result: Vec<(usize, String)>) -> Vec<String> {
+        result.iter().map(|x| x.1.clone()).collect()
     }
 }
