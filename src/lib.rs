@@ -4,13 +4,21 @@ pub fn run(config: Config) -> Result<(), String> {
     let file_text = get_file_text(&config.file_name);
     let file_text = if config.match_case { file_text } else { file_text.to_lowercase() };
 
-    if file_text.contains(&config.search_str()) {
-        println!("This file contains the string \"{}\"", config.search_str());
-    } else {
-        println!("This file doesn't contain the string \"{}\"", config.search_str());
+    match search(&config.search_str(), &file_text) {
+        Some(line) => println!("The next line from the text contains \"{}\"\n   -> {}", config.search_str(), line),
+        None => println!("Provided file doesn't contain the string \"{}\"", config.search_str())
     }
 
     Ok(())
+}
+
+fn search(search_str: &str, text: &str) -> Option<String> {
+    let mut split = text.split("\n");
+
+    match split.find(|str| str.contains(search_str)) {
+        Some(line) => Some(line.to_string()),
+        None => None,
+    }
 }
 
 fn get_file_text(file_name: &str) -> String {
@@ -55,5 +63,32 @@ impl Config {
             Some(val) => Ok(val.to_string()),
             None => if is_flag { Ok("flag_arg".to_string()) } else { Err(parse_error_message.to_string()) },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn successful_search() {
+        let search_str = "How";
+        let text = "\
+How in the world
+Does that make sense?
+I don't know";
+
+        assert_eq!(search(search_str, text), Some("How in the world".to_string()));
+    }
+
+    #[test]
+    fn failed_search() {
+        let search_str = "how";
+        let text = "\
+How in the world
+does it make sense?
+I don't know";
+
+        assert_eq!(search(search_str, text), None);
     }
 }
