@@ -4,13 +4,12 @@ pub fn run(config: Config) -> Result<(), String> {
     let file_text = get_file_text(&config.file_name);
     let search_results = search(&config.search_str, &file_text, config.match_case);
 
-    println!("{file_text}");
+    print_result(&config.search_str, &search_results);
 
-    if search_results.len() > 0 {
-        println!("\"{}\" was found in the next lines:\n", config.search_str);
-        search_results.iter().for_each(|x| println!("[line {}] {}", x.0, x.1));
-    } else {
-        println!("Provided file doesn't contain the string \"{}\"", config.search_str);
+    if let Some(output_file_name) = config.output_file {
+        if let Err(output_error) = save_as_file(&output_file_name, &search_results) {
+            return Err(output_error);
+        }
     }
 
     Ok(())
@@ -35,9 +34,34 @@ fn get_file_text(file_name: &str) -> String {
     file
 }
 
+fn print_result(search_str: &str, result: &Vec<(usize, String)>) {
+    if result.len() == 0 {
+        println!("Provided file doesn't contain the string \"{}\"", search_str);
+        return ();
+    }
+
+    println!("\"{}\" was found in the next lines:\n", search_str);
+    result.iter().for_each(|(index, line)| { println!("[line {}] {}", index, line); });
+}
+
+fn save_as_file(output_file_name: &str, result: &Vec<(usize, String)>) -> Result<(), String> {
+    let mut output = String::new();
+
+    for (index, line) in result.iter() {
+        let line = format!("{index} {line}\n");
+        output.push_str(line.as_str());
+    }
+
+    match fs::write(output_file_name, output) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(format!("Unable to write to file: {err}"))
+    }
+}
+
 pub struct Config {
     file_name: String,
     search_str: String,
+    output_file: Option<String>,
     match_case: bool,
 }
 
@@ -45,9 +69,14 @@ impl Config {
     pub fn build(args: Vec<String>) -> Result<Config, String> {
         let file_name = Self::get_arg(&args, "file-name", false, false)?;
         let search_str = Self::get_arg(&args, "search-str", false, false)?;
-        let match_case = Self::get_arg(&args, "match-case", true, false).is_ok();
+        let match_case = Self::get_arg(&args, "match-case", true, true).is_ok();
+        let output_file = Self::get_arg(&args, "output-file", false, true);
+        let output_file = match output_file {
+            Ok(file) => Some(file),
+            _ => None
+        };
 
-        Ok(Config { file_name, search_str, match_case })
+        Ok(Config { file_name, search_str, match_case, output_file })
     }
 
     fn get_arg(args: &Vec<String>, arg_name: &str, is_flag: bool, is_optional: bool) -> Result<String, String> {
