@@ -1,7 +1,7 @@
 use std::fs;
 
 pub fn run(config: Config) -> Result<(), String> {
-    let file_text = get_file_text(&config.file_name);
+    let file_text = get_file_text(&config.file_name)?;
     let search_results = search(&config.search_str, &file_text, config.match_case);
 
     print_result(&config.search_str, &search_results);
@@ -27,11 +27,15 @@ fn search(search_str: &str, text: &str, match_case: bool) -> Vec<(usize, String)
     result
 }
 
-fn get_file_text(file_name: &str) -> String {
-    let file = fs::read_to_string(file_name).expect("Something went wrong reading the file");
+fn get_file_text(file_name: &str) -> Result<String, String> {
+    let file = match fs::read_to_string(file_name) {
+        Ok(file) => file,
+        Err(e) => return Err(format!("Unable to read the file specified: {e}")),
+    };
+
     let file = file.trim_start_matches("\u{feff}").to_string();
 
-    file
+    Ok(file)
 }
 
 fn print_result(search_str: &str, result: &Vec<(usize, String)>) {
@@ -70,11 +74,7 @@ impl Config {
         let file_name = Self::get_arg(&args, "file-name", false, false)?;
         let search_str = Self::get_arg(&args, "search-str", false, false)?;
         let match_case = Self::get_arg(&args, "match-case", true, true).is_ok();
-        let output_file = Self::get_arg(&args, "output-file", false, true);
-        let output_file = match output_file {
-            Ok(file) => Some(file),
-            _ => None
-        };
+        let output_file = Self::get_arg(&args, "output-file", false, true).ok();
 
         Ok(Config { file_name, search_str, match_case, output_file })
     }
@@ -116,7 +116,7 @@ I don't know";
 
     #[test]
     fn failed_search() {
-        let search_str = "wheeew";
+        let search_str = "whew";
         let result = tuple_to_lines(search(search_str, SAMPLE_TEXT, false));
 
         assert_eq!(result, Vec::<String>::new());
